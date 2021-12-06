@@ -10,7 +10,7 @@ class DropdownItem extends LitElement {
   render() {
     return html`
       <li>
-        <button @click="${this.handleClick}">
+        <button @click="${this.handleClick}" role="menuitem">
           <slot></slot>
         </button>
       </li>

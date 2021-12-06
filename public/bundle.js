@@ -3,7 +3,7 @@
  * Copyright 2019 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
  */
-const t$2=window.ShadowRoot&&(void 0===window.ShadyCSS||window.ShadyCSS.nativeShadow)&&"adoptedStyleSheets"in Document.prototype&&"replace"in CSSStyleSheet.prototype,e$2=Symbol(),n$4=new Map;class s$4{constructor(t,n){if(this._$cssResult$=!0,n!==e$2)throw Error("CSSResult is not constructable. Use `unsafeCSS` or `css` instead.");this.cssText=t;}get styleSheet(){let e=n$4.get(this.cssText);return t$2&&void 0===e&&(n$4.set(this.cssText,e=new CSSStyleSheet),e.replaceSync(this.cssText)),e}toString(){return this.cssText}}const o$4=t=>new s$4("string"==typeof t?t:t+"",e$2),i$2=(e,n)=>{t$2?e.adoptedStyleSheets=n.map((t=>t instanceof CSSStyleSheet?t:t.styleSheet)):n.forEach((t=>{const n=document.createElement("style"),s=window.litNonce;void 0!==s&&n.setAttribute("nonce",s),n.textContent=t.cssText,e.appendChild(n);}));},S$2=t$2?t=>t:t=>t instanceof CSSStyleSheet?(t=>{let e="";for(const n of t.cssRules)e+=n.cssText;return o$4(e)})(t):t;
+const t$2=window.ShadowRoot&&(void 0===window.ShadyCSS||window.ShadyCSS.nativeShadow)&&"adoptedStyleSheets"in Document.prototype&&"replace"in CSSStyleSheet.prototype,e$2=Symbol(),n$4=new Map;class s$4{constructor(t,n){if(this._$cssResult$=!0,n!==e$2)throw Error("CSSResult is not constructable. Use `unsafeCSS` or `css` instead.");this.cssText=t;}get styleSheet(){let e=n$4.get(this.cssText);return t$2&&void 0===e&&(n$4.set(this.cssText,e=new CSSStyleSheet),e.replaceSync(this.cssText)),e}toString(){return this.cssText}}const o$4=t=>new s$4("string"==typeof t?t:t+"",e$2),r$3=(t,...n)=>{const o=1===t.length?t[0]:n.reduce(((e,n,s)=>e+(t=>{if(!0===t._$cssResult$)return t.cssText;if("number"==typeof t)return t;throw Error("Value passed to 'css' function must be a 'css' function result: "+t+". Use 'unsafeCSS' to pass non-literal values, but take care to ensure page security.")})(n)+t[s+1]),t[0]);return new s$4(o,e$2)},i$2=(e,n)=>{t$2?e.adoptedStyleSheets=n.map((t=>t instanceof CSSStyleSheet?t:t.styleSheet)):n.forEach((t=>{const n=document.createElement("style"),s=window.litNonce;void 0!==s&&n.setAttribute("nonce",s),n.textContent=t.cssText,e.appendChild(n);}));},S$2=t$2?t=>t:t=>t instanceof CSSStyleSheet?(t=>{let e="";for(const n of t.cssRules)e+=n.cssText;return o$4(e)})(t):t;
 
 /**
  * @license
@@ -971,7 +971,7 @@ N();
 const userSlice = createSlice({
   name: 'user',
   initialState: {
-    theme: 'light',
+    theme: 'auto',
     status: 'offline',
   },
   reducers: {
@@ -980,11 +980,11 @@ const userSlice = createSlice({
     },
     setStatus: (state, action) => {
       state.status = action.payload;
-    }
+    },
   },
 });
 
-const { setTheme } = userSlice.actions;
+const { setTheme, hydrate } = userSlice.actions;
 
 var userReducer = userSlice.reducer;
 
@@ -1004,7 +1004,7 @@ class DropdownItem extends s$1 {
   render() {
     return p$1`
       <li>
-        <button @click="${this.handleClick}">
+        <button @click="${this.handleClick}" role="menuitem">
           <slot></slot>
         </button>
       </li>
@@ -1027,16 +1027,47 @@ class DropdownItem extends s$1 {
 }
 customElements.define('s-dropdown-item', DropdownItem);
 
+class Button extends s$1 {
+  static styles = r$3`
+    button {
+      background:none;
+      appearance:none;
+      color:var(--text-color);
+      border:1px solid var(--border-color);
+      border-radius:8px;
+      padding:1em;
+      font-size:18px;
+    }
+  `
+  constructor() {
+    super();
+  }
+  render() {
+    return p$1`
+      <button>
+        <slot></slot>
+      </button>
+    `
+  }
+}
+customElements.define('s-button', Button);
+
 class Dropdown extends s$1 {
+  static styles = r$3`
+    div {
+      position:absolute;
+    }
+  `
   static properties = {
     _show: { state: true, type: Boolean },
     name: { type: String },
-    updates: { type: Boolean}
+    updates: { type: Boolean },
   }
 
   constructor() {
     super();
     this._show = false;
+    this._id = String(Date.now()) + Math.floor(Math.random() * 10000);
   }
 
   connectedCallback() {
@@ -1048,12 +1079,21 @@ class Dropdown extends s$1 {
 
   render() {
     const content = p$1`
-      <div>
-        <slot></slot>
+      <div id="${this._id}">
+        <ul>
+          <slot></slot>
+        </ul>
       </div>
     `;
     return p$1`
-      <button @click="${this.handleClick}">${this.name}</button>
+      <s-button
+        @click="${this.handleClick}"
+        aria-haspopup="true"
+        aria-expanded="${this._show}"
+        aria-controls="${this._id}"
+      >
+        ${this.name}
+      </s-button>
       ${this._show ? content : ''}
     `
   }
@@ -1065,6 +1105,14 @@ class Dropdown extends s$1 {
 customElements.define('s-dropdown', Dropdown);
 
 class UserSettings extends connect(store)(s$1) {
+  static styles = r$3`
+    div {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+  `
   static properties = {
     theme: { state: true },
   }
@@ -1076,15 +1124,16 @@ class UserSettings extends connect(store)(s$1) {
   }
   render() {
     return p$1`
-      Theme:
-      <s-dropdown name="${this.theme}">
-        <s-dropdown-item value="light" @select="${this.handleSelect}"
-          >Light</s-dropdown-item
-        >
-        <s-dropdown-item value="dark" @select="${this.handleSelect}"
-          >Dark</s-dropdown-item
-        >
-      </s-dropdown>
+      <div>
+        <s-dropdown name="${this.theme}">
+          <s-dropdown-item value="light" @select="${this.handleSelect}"
+            >Light</s-dropdown-item
+          >
+          <s-dropdown-item value="dark" @select="${this.handleSelect}"
+            >Dark</s-dropdown-item
+          >
+        </s-dropdown>
+      </div>
     `
   }
   handleSelect({ detail }) {
@@ -1093,9 +1142,497 @@ class UserSettings extends connect(store)(s$1) {
 }
 customElements.define('s-user-settings', UserSettings);
 
-class SApp extends s$1 {
+class List extends s$1 {
+  static styles = r$3`
+    ul {
+      padding:0;
+      margin:0;
+      list-style:none;
+    }
+  ` 
+
+  static properties = {
+    enableHover: { type: Boolean },
+    enableSelect: { type: Boolean },
+  }
+
+  constructor() {
+    super();
+  }
+
+  firstUpdated() {
+    this.addEventListener('itemSelect', this.handleSelectDeselect);
+    this.addEventListener('keydown', this.handleKeyDown);
+  }
+
+  handleKeyDown(e) {
+    const focusedItem = this.querySelector('s-list-item:focus');
+    if(e.code === 'Enter') {
+      focusedItem.click();
+    }
+    if(e.code === 'Space') {
+      new CustomEvent('spacePress', {
+        detail: { currentItem: focusedItem },
+        bubbles: true,
+        composed: true,
+      });
+    }
+    if(e.code === 'ArrowDown') {
+      focusedItem.nextElementSibling?.focus();
+    }
+    if(e.code === 'ArrowUp') {
+      focusedItem.previousElementSibling?.focus();
+    }
+  }
+
+  handleSelectDeselect(e) {
+    e.target.setAttribute('selected', e.detail.checked);
+    const selectedItems = this.querySelectorAll('s-list-item[selected="true"]');
+
+    const detail = {
+      currentItem: e.target || {},
+      selectedItems: selectedItems || [],
+      selected: selectedItems.length,
+    };
+
+    this.dispatchEvent(
+      new CustomEvent('listSelect', {
+        detail: detail,
+        bubbles: true,
+        composed: true,
+      })
+    );
+  }
+
   render() {
-    return p$1`<s-user-settings></s-user-settings>`
+    return p$1`
+      <ul>
+        <slot></slot>
+      </ul>
+    `
+  }
+}
+customElements.define('s-list', List);
+
+class Checkbox extends s$1 {
+  static styles = r$3`
+    .checkbox {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 17px;
+      width: 17px;
+      border-radius: 3px;
+      border: 1px solid var(--border-color);
+    }
+    .checkbox[aria-checked='true'] {
+      background: var(--color-branding-1);
+      border-color: var(--color-branding-1);
+    }
+    .checkbox:focus,
+    .checkbox:active {
+      border-color:transparent;
+      box-shadow: 0 0 0 1px var(--background-color),
+        0 0 0 3px var(--color-branding-1);
+      outline: none;
+    }
+    svg {
+      fill: #ffffff;
+      width: 65%;
+      height: 65%;
+    }
+  `
+
+  static get properties() {
+    return {
+      label: {},
+      value: {},
+      disabled: {},
+      checked: { reflect: true },
+    }
+  }
+
+  constructor() {
+    super();
+    this.value = '';
+    this.disabled = false;
+    this.checked = false;
+    this._id = String(Date.now()) + Math.floor(Math.random() * 10000);
+  }
+
+  handleClick(e) {
+    this.checked = !this.checked;
+    const eventOptions = {
+      bubbles: true,
+      composed: true,
+    };
+    this.dispatchEvent(new CustomEvent('click', eventOptions));
+    this.dispatchEvent(new CustomEvent('change', eventOptions));
+  }
+
+  handleKeypress(e) {
+    if (e.key !== ' ') return
+    e.preventDefault();
+    this.checked = !this.checked;
+    const eventOptions = {
+      bubbles: true,
+      composed: true,
+    };
+    this.dispatchEvent(new CustomEvent('keypress', eventOptions));
+    this.dispatchEvent(new CustomEvent('change', eventOptions));
+  }
+
+  render() {
+    const check = p$1`
+      <svg viewBox="0 0 10 8" xmlns="http://www.w3.org/2000/svg">
+        <path
+          d="M9.09027 1.09662C9.38316 1.38952 9.38316 1.86439 9.09027 2.15728L4.34427 6.90328C4.05142 7.19613 3.57663 7.19618 3.28372 6.90339L0.909723 4.53039C0.616768 4.23756 0.616668 3.76269 0.9095 3.46973C1.20233 3.17678 1.6772 3.17668 1.97016 3.46951L3.81383 5.3124L8.02961 1.09662C8.3225 0.80373 8.79738 0.80373 9.09027 1.09662Z"
+        />
+      </svg>
+    `;
+
+    return p$1`
+      <label id="${this._id}">${this.label}</label>
+      <span
+        class="checkbox"
+        role="checkbox"
+        tabindex="0"
+        aria-checked="${this.checked}"
+        aria-labelledby="${this._id}"
+        @click="${this.handleClick}"
+        @keypress="${this.handleKeypress}"
+      >
+        ${this.checked ? check : ''}
+      </span>
+    `
+  }
+}
+customElements.define('s-checkbox', Checkbox);
+
+class Dot extends s$1 {
+  static styles = r$3`
+    .dot {
+      display: block;
+      width: 8px;
+      height: 8px;
+      border-radius:4px;
+    }
+    .dot--green {
+      background: var(--color-green-500);
+    }
+  `
+  static properties = {
+    color: {},
+    label: {},
+  }
+
+  constructor() {
+    super();
+    this.color = 'green';
+  }
+
+  render() {
+    return p$1`
+      <span class="dot dot--${this.color}" aria-label="${this.label}"></span>
+    `
+  }
+}
+
+customElements.define('s-dot', Dot);
+
+class ListItem extends s$1 {
+  static styles = r$3`
+    .row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      min-height: 52px;
+      padding: 0 30px;
+      position:relative;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .row:hover:not(:focus),
+    .row--active {
+      background: var(--color-list-item--active);
+    }
+    :host {
+      display:block;
+      position:relative;
+    }
+    :host(:focus) {
+      box-shadow: 0 0 0 2px var(--color-branding-1);
+      outline: none; 
+      border-radius:3px;
+      z-index:1;
+    }
+    .row__col {
+      display: flex;
+      align-items: center;
+    }
+    .row__col > * {
+      margin-right: 10px;
+    }
+  `
+
+  static properties = {
+    selected: {},
+    _active: { state: true },
+  }
+
+  constructor() {
+    super();
+    this._active = false;
+    this.tabIndex = 0;
+    this.addEventListener('click', this.handleItemClick);
+  }
+
+  render() {
+    return p$1`
+      <div
+        class="row${this._active ? ' row--active' : ''}"
+      >
+        <div class="row__col">
+          <s-checkbox
+            ${this.selected ? 'checked="true"' : ''}
+            @change="${this.handleChange}"
+          ></s-checkbox>
+          <s-dot color="green" label="Published"></s-dot>
+          <slot></slot>
+        </div>
+        <div class="row__col">
+          <slot name="col2"></slot>
+        </div>
+        <div class="row__col" name="col3">
+          <slot name="col3"></slot>
+        </div>
+        <div class="row__col" name="col4">
+          <slot name="col4"></slot>
+        </div>
+      </div>
+    `
+  }
+
+  handleItemClick(e) {
+    if (e.target.matches('s-checkbox')) return
+    const eventOptions = {
+      detail: { currentItem: this },
+      bubbles: true,
+      composed: true,
+    };
+    this.dispatchEvent(new CustomEvent('itemClick', eventOptions));
+  }
+
+  handleChange(e) {
+    this._active = e.target.checked;
+    const eventOptions = {
+      detail: { checked: e.target.checked },
+      bubbles: true,
+      composed: true,
+    };
+    this.dispatchEvent(new CustomEvent('itemSelect', eventOptions));
+  }
+}
+customElements.define('s-list-item', ListItem);
+
+class Panel extends s$1 {
+  static styles = r$3`
+    div {
+      position: absolute;
+    }
+  `
+
+  constructor() {
+    super();
+    this._show = false;
+    this._id = String(Date.now()) + Math.floor(Math.random() * 10000);
+  }
+
+  static properties = {
+    _show: { state: true, type: Boolean },
+    name: { type: String },
+  }
+
+  render() {
+    const content = p$1`
+      <div id="${this._id}">
+        <slot></slot>
+      </div>
+    `;
+    return p$1`
+      <s-button
+        @click="${this.handleClick}"
+        aria-haspopup="true"
+        aria-expanded="${this._show}"
+        aria-controls="${this._id}"
+      >
+        ${this.name}
+      </s-button>
+      ${this._show ? content : ''}
+    `
+  }
+
+  handleClick() {
+    console.log('foo');
+    this._show = !this._show;
+  }
+}
+customElements.define('s-panel', Panel);
+
+class UserImg extends s$1 {
+  static styles = r$3`
+    img {
+      border-radius: 50%;
+      height: 100%;
+      width: auto;
+    }
+    .small {
+      width:25px;
+      height:25px;
+    }
+  `
+  static properties = {
+    src: {},
+    name: {},
+    badge: {},
+    status: {},
+    size: {}
+  }
+  render() {
+    return p$1`
+      <img class="${this.size}" src="${this.src}" alt="${this.name}" />
+    `
+  }
+}
+customElements.define('s-user-img', UserImg);
+
+class Popup extends s$1 {
+  static styles = r$3`
+    .popup__area {
+      position:absolute;
+    }
+  `
+  static properties = {
+    _expanded: { state: true },
+  }
+  constructor() {
+    super();
+    this._expanded = false;
+    this._id = String(Date.now()) + Math.floor(Math.random() * 10000);
+  }
+  render() {
+    const area = p$1`<slot id="${this._id}" class="popup__area"></slot>`;
+
+    return p$1`
+      <slot
+        class="popup__trigger"
+        name="trigger"
+        @click="${this.handleTriggerClick}"
+        aria-haspopup="true"
+        aria-expanded="${this._expanded}"
+        aria-controls="${this._id}"
+      >
+      </slot>
+      ${this._expanded ? area : ''}
+    `
+  }
+  handleTriggerClick(e) {
+    this._expanded = !this._expanded;
+  }
+}
+customElements.define('s-popup', Popup);
+
+class Documents extends s$1 {
+  static styles = r$3`
+    .documents__list {
+      max-width: 1400px;
+      margin: 30px auto;
+    }
+  `
+  static properties = {
+    selected: {},
+    showSlug: {},
+  }
+  constructor() {
+    super();
+    this.selected = 0;
+    this.showSlug = true;
+  }
+  render() {
+    return p$1`
+      <div>
+        ${this.selected} documents selected
+        <s-panel name="Foo" @change="${this.handleViewChange}">
+          <s-checkbox
+            label="Slug"
+            checked="${this.showSlug}"
+            data-for="showSlug"
+          ></s-checkbox>
+        </s-panel>
+      </div>
+
+      <div class="documents__list">
+        <s-list
+          @listSelect="${this.handleListSelect}"
+          @itemClick="${this.handleItemClick}"
+        >
+          <s-list-item role="listitem">
+            <span>Lorem ipsum dolor</span>
+            <div slot="col2">${this.showSlug ? '/lorem-ipsum-dolor' : ''}</div>
+            <div slot="col4">
+              <s-user-img src="https://i.pravatar.cc/150?img=7" name="" size="small"></s-user-img>
+              <s-popup>
+                <s-button slot="trigger">Trigger</s-button>
+                <div>apa</div>
+              </s-popup>
+            </div>
+          </s-list-item>
+          <s-list-item role="listitem">Bar</s-list-item>
+        </s-list>
+      </div>
+    `
+  }
+  handleListSelect({ detail }) {
+    console.log(detail);
+    this.selected = detail.selected;
+  }
+  handleItemClick({ detail }) {
+    console.log(detail);
+  }
+  handleViewChange(e) {
+    console.log(e.target.dataset.for);
+    this[e.target.dataset.for] = !this[e.target.dataset.for];
+  }
+}
+customElements.define('s-documents', Documents);
+
+class SApp extends connect(store)(s$1) {
+  constructor() {
+    super();
+    const initialState = store.getState();
+    this.setTheme(initialState.user.theme);
+  }
+
+  setTheme(theme) {
+    if (theme === 'auto') {
+      document.body.dataset.theme = window.matchMedia(
+        '(prefers-color-scheme: dark)'
+      ).matches
+        ? 'dark'
+        : 'light';
+    } else {
+      document.body.dataset.theme = theme;
+    }
+  }
+
+  stateChanged(state) {
+    this.setTheme(state.user.theme);
+  }
+
+  render() {
+    return p$1`<s-documents></s-documents>`
+  }
+  createRenderRoot() {
+    return this
   }
 }
 

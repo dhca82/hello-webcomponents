@@ -1,18 +1,12 @@
-import { LitElement, html, css } from 'lit'
-import './DropdownItem'
-import '../button/Button'
+import { css, html, LitElement } from 'lit'
+import '../button/Button.js'
 
-class Dropdown extends LitElement {
+class Panel extends LitElement {
   static styles = css`
     div {
-      position:absolute;
+      position: absolute;
     }
   `
-  static properties = {
-    _show: { state: true, type: Boolean },
-    name: { type: String },
-    updates: { type: Boolean },
-  }
 
   constructor() {
     super()
@@ -20,19 +14,15 @@ class Dropdown extends LitElement {
     this._id = String(Date.now()) + Math.floor(Math.random() * 10000)
   }
 
-  connectedCallback() {
-    super.connectedCallback()
-    this.addEventListener('select', ({ detail }) => {
-      this._show = false
-    })
+  static properties = {
+    _show: { state: true, type: Boolean },
+    name: { type: String },
   }
 
   render() {
     const content = html`
       <div id="${this._id}">
-        <ul>
-          <slot></slot>
-        </ul>
+        <slot></slot>
       </div>
     `
     return html`
@@ -49,7 +39,8 @@ class Dropdown extends LitElement {
   }
 
   handleClick() {
+    console.log('foo')
     this._show = !this._show
   }
 }
-customElements.define('s-dropdown', Dropdown)
+customElements.define('s-panel', Panel)

@@ -1,0 +1,33 @@
+:root {
+
+  --color-light-400: hsl(235, 12%, 94%);
+  --color-dark-400: hsl(235, 12%, 20%);
+
+  --color-green-500: hsl(137, 72%, 59%);
+  --color-purple-500: hsl(254, 67%, 55%);
+
+  /* color-scheme: light dark; */
+  --text-color: hsl(237, 12%, 42%);
+  --background-color: hsl(237, 12%, 92%);
+  --border-color: hsl(237, 12%, 72%);
+
+  --color-list-item--active: var(--color-light-400);
+
+}
+[data-theme='dark'] {
+  --text-color: hsl(237, 12%, 92%);
+  --background-color: hsl(237, 12%, 19%);
+  --border-color: hsl(237, 12%, 32%);
+  --color-branding-1: hsl(235, 72%, 59%);
+  
+  --color-list-item--active: var(--color-dark-400);
+  
+}
+
+body {
+  background-color: var(--background-color);
+  color: var(--text-color);
+  margin:0;
+  padding:0;
+  font-family: -apple-system, BlinkMacSystemFont, avenir next, avenir, segoe ui, helvetica neue, helvetica, Ubuntu, roboto, noto, arial, sans-serif; 
+}

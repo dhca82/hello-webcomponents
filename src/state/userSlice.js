@@ -3,7 +3,7 @@ import { createSlice } from '@reduxjs/toolkit'
 export const userSlice = createSlice({
   name: 'user',
   initialState: {
-    theme: 'light',
+    theme: 'auto',
     status: 'offline',
   },
   reducers: {
@@ -12,10 +12,10 @@ export const userSlice = createSlice({
     },
     setStatus: (state, action) => {
       state.status = action.payload
-    }
+    },
   },
 })
 
-export const { setTheme } = userSlice.actions
+export const { setTheme, hydrate } = userSlice.actions
 
 export default userSlice.reducer
